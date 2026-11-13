@@ -1,5 +1,7 @@
 package com.xxxx.ordertracking.entity;
 
+import com.xxxx.ordertracking.converter.OrderStatusConverter;
+import com.xxxx.ordertracking.enums.OrderStatus;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -24,8 +26,16 @@ public class Order extends BaseEntity {
     @JoinColumn(name = "account_id", nullable = false)
     private Account account;
 
-    @Column(name = "status", nullable = false, length = 30)
-    private String status = "PENDING";
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "carrier_id")
+    private Carrier carrier;
+
+    @Column(name = "checkout_request_fingerprint", length = 64)
+    private String checkoutRequestFingerprint;
+
+    @Convert(converter = OrderStatusConverter.class)
+    @Column(name = "status", nullable = false)
+    private OrderStatus status = OrderStatus.PENDING;
 
     @Column(name = "payment_method", nullable = false, length = 30)
     private String paymentMethod;

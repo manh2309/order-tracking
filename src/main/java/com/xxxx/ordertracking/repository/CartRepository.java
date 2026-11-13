@@ -1,6 +1,8 @@
 package com.xxxx.ordertracking.repository;
 
 import com.xxxx.ordertracking.entity.Cart;
+import jakarta.persistence.LockModeType;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -13,4 +15,8 @@ public interface CartRepository extends JpaRepository<Cart, String> {
 
     @Query("select c from Cart c where c.account.id =:accountId and c.deleted = 0")
     Optional<Cart> findAllByAccountId(@Param("accountId") String accountId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select c from Cart c where c.account.id = :accountId and c.deleted = 0")
+    Optional<Cart> lockActiveCart(@Param("accountId") String accountId);
 }

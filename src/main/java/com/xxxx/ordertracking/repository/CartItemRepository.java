@@ -13,8 +13,8 @@ import java.util.Optional;
 
 @Repository
 public interface CartItemRepository extends JpaRepository<CartItem, String> {
-    @Query("select ci from CartItem ci JOIN Cart c on c.id = ci.cart.id " +
-            "and c.id =:cartId ")
+    @Query("select ci from CartItem ci join ci.cart c where c.id = :cartId " +
+            "and c.deleted = 0 and ci.deleted = 0")
     Page<CartItem> findByCartId(@Param("cartId") String cartId, Pageable pageable);
 
     @Query("select ci From CartItem ci join ci.cart c " +

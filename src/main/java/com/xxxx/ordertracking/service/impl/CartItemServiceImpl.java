@@ -35,6 +35,8 @@ public class CartItemServiceImpl implements CartItemService {
     @Override
     @Transactional
     public CartItemResponse updateQuantity(String accountId, String itemId, UpdateCartItemRequest updateCartItemRequest) {
+        cartRepository.lockActiveCart(accountId)
+                .orElseThrow(() -> new ApiException(ErrorCode.CART_ITEM_NOT_FOUND));
         CartItem cartItem = cartItemRepository.findActiveItem(itemId, accountId)
                 .orElseThrow(() -> new ApiException(ErrorCode.CART_ITEM_NOT_FOUND));
         var variant = cartItem.getProductVariant();

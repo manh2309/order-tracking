@@ -1,5 +1,7 @@
 package com.xxxx.ordertracking.entity;
 
+import com.xxxx.ordertracking.converter.ShipmentStatusConverter;
+import com.xxxx.ordertracking.enums.ShipmentStatus;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -43,6 +45,7 @@ public class Shipment extends BaseEntity {
     @Column(name = "attempt_count", nullable = false)
     private Integer attemptCount = 0;
 
-    @Column(name = "status", nullable = false, length = 30)
-    private String status = "PICKING";
+    @Convert(converter = ShipmentStatusConverter.class)
+    @Column(name = "status", nullable = false)
+    private ShipmentStatus status = ShipmentStatus.PICKING;
 }
