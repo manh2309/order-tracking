@@ -51,7 +51,6 @@ public class OrderServiceImpl implements OrderService {
         Cart cart = cartRepository.lockActiveCart(accountId)
                 .orElseThrow(() -> new ApiException(ErrorCode.CART_EMPTY));
 
-        // Another checkout may have committed while this request waited for the cart lock.
         existing = orderRepository.findByAccount_IdAndCheckoutRequestId(accountId, request.checkoutRequestId());
         if (existing.isPresent()) {
             return replay(existing.get(), fingerprint);
@@ -65,7 +64,6 @@ public class OrderServiceImpl implements OrderService {
             throw new ApiException(unavailable ? ErrorCode.PRODUCT_NOT_AVAILABLE : ErrorCode.INSUFFICIENT_STOCK);
         }
 
-        // Lock inventory in consistent SKU-ID order across different carts.
         var cartItems = quote.items().stream()
                 .sorted(Comparator.comparing(item -> item.getProductVariant().getId()))
                 .toList();

@@ -20,9 +20,9 @@ public final class AccountPrincipal extends User {
                 username,
                 passwordHash,
                 enabled,
-                true, // tài khoản chưa hết hạn
-                true, // mật khẩu chưa hết hạn
-                true, // không có cơ chế khóa riêng ngoài enabled
+                true,
+                true,
+                true,
                 List.of(new SimpleGrantedAuthority("ROLE_" + roleCode))
         );
         this.accountId = accountId;
