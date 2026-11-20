@@ -8,5 +8,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface CarrierRepository extends JpaRepository<Carrier, String> {
-    boolean existsByIdAndStatusAndDeleted(String id, Long status, Long deleted);
+    boolean existsByIdAndStatusAndDeleted(String id, Byte status, Byte deleted);
 }

@@ -11,7 +11,8 @@ public interface ProductVariantRepository extends JpaRepository<ProductVariant, 
     @Query(value = """
             UPDATE product_variants v
             JOIN products p ON p.id = v.product_id
-            SET v.quantity_in_stock = v.quantity_in_stock - :quantity
+            SET v.quantity_in_stock = v.quantity_in_stock - :quantity,
+            v.version = v.version + 1
             WHERE v.id = :id AND v.quantity_in_stock >= :quantity
               AND v.deleted = 0 AND v.status = 1
               AND p.deleted = 0 AND p.status = 1

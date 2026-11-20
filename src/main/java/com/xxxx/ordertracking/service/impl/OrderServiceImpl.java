@@ -8,6 +8,7 @@ import com.xxxx.ordertracking.entity.*;
 import com.xxxx.ordertracking.repository.*;
 import com.xxxx.ordertracking.service.OrderService;
 import com.xxxx.ordertracking.service.CheckoutPricingService;
+import com.xxxx.ordertracking.service.StockReservation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -30,11 +31,11 @@ import java.util.stream.Stream;
 public class OrderServiceImpl implements OrderService {
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
-    private final ProductVariantRepository productVariantRepository;
     private final CartRepository cartRepository;
     private final CarrierRepository carrierRepository;
     private final CheckoutPricingService checkoutPricingService;
-
+    private final StockReservation stockReservation;
+    private final CartItemRepository cartItemRepository;
     @Override
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public CreateOrderResponse createOrder(CreateOrderRequest request, String accountId) {
@@ -55,8 +56,16 @@ public class OrderServiceImpl implements OrderService {
         if (existing.isPresent()) {
             return replay(existing.get(), fingerprint);
         }
+        var cartItems = cartItemRepository.findActiveItemsByAccountId(accountId).stream()
+                .sorted(Comparator.comparing(item -> item.getProductVariant().getId()))
+                .toList();
+        if (cartItems.isEmpty()) {
+            throw new ApiException(ErrorCode.CART_EMPTY);
+        }
 
-        var quote = checkoutPricingService.calculate(accountId, request.addressId(), request.carrierId());
+        stockReservation.prepare(cartItems);
+        var quote = checkoutPricingService.calculate(
+                accountId, request.addressId(), request.carrierId(), cartItems);
         var summary = quote.summary();
         if (!summary.canPlaceOrder()) {
             boolean unavailable = summary.issues().stream()
@@ -64,13 +73,8 @@ public class OrderServiceImpl implements OrderService {
             throw new ApiException(unavailable ? ErrorCode.PRODUCT_NOT_AVAILABLE : ErrorCode.INSUFFICIENT_STOCK);
         }
 
-        var cartItems = quote.items().stream()
-                .sorted(Comparator.comparing(item -> item.getProductVariant().getId()))
-                .toList();
         for (CartItem item : cartItems) {
-            if (productVariantRepository.reserveStock(item.getProductVariant().getId(), item.getQuantity()) != 1) {
-                throw new ApiException(ErrorCode.INSUFFICIENT_STOCK);
-            }
+            stockReservation.reserve(item.getProductVariant(), item.getQuantity());
         }
 
         var address = quote.address();

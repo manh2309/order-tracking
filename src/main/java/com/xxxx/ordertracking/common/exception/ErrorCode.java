@@ -23,6 +23,7 @@ public enum ErrorCode {
     INVALID_SHIPMENT_STATUS_TRANSITION(HttpStatus.CONFLICT, "Không thể chuyển vận đơn sang trạng thái được yêu cầu"),
     ADDRESS_NOT_FOUND(HttpStatus.NOT_FOUND, "Không tìm thấy địa chỉ giao hàng"),
     SHIPPING_FEE_UNAVAILABLE(HttpStatus.CONFLICT, "Chưa xác định được phí vận chuyển cho giỏ hàng này"),
+    STOCK_UPDATE_CONFLICT(HttpStatus.CONFLICT, "Tồn kho vừa thay đổi, vui lòng kiểm tra lại giỏ hàng"),
     CARRIER_NOT_AVAILABLE(HttpStatus.CONFLICT, "Đơn vị vận chuyển hiện không khả dụng");
 
     private final HttpStatus status;

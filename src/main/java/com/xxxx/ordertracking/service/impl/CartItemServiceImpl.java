@@ -25,7 +25,7 @@ public class CartItemServiceImpl implements CartItemService {
     @Override
     public Page<CartItemResponse> findCartItemByCart(String accountId, Pageable pageable) {
 
-        Cart cart = cartRepository.findAllByAccountId(accountId)
+        Cart cart = cartRepository.findByAccount_IdAndDeleted(accountId, (byte) 0)
                 .orElseThrow(() -> new ApiException(ErrorCode.CART_NOT_FOUND));
         Page<CartItemResponse> cartItemResponses = cartItemRepository.findByCartId(cart.getId(), pageable).map(CartItemMapper::toResponse);
 

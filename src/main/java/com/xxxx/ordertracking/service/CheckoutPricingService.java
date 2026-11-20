@@ -7,7 +7,7 @@ import com.xxxx.ordertracking.entity.CartItem;
 import java.util.List;
 
 public interface CheckoutPricingService {
-    CheckoutQuote calculate(String accountId, String addressId, String carrierId);
+    CheckoutQuote calculate(String accountId, String addressId, String carrierId, List<CartItem> items);
 
     record CheckoutQuote(AccountAddress address, List<CartItem> items, CheckoutPreviewResponse summary) {}
 }

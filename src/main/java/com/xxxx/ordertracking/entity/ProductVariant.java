@@ -40,4 +40,8 @@ public class ProductVariant extends BaseEntity {
 
     @Column(name = "status", nullable = false)
     private Byte status = 1;
+
+    @Version
+    @Column(name = "version", nullable = false)
+    private Long version;
 }

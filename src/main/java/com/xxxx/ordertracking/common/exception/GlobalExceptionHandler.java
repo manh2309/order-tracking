@@ -19,6 +19,15 @@ import java.util.Objects;
 @RestControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
+    @ExceptionHandler(org.springframework.dao.OptimisticLockingFailureException.class)
+    public ResponseEntity<ApiResponse<Void>> handleOptimisticLock(
+            org.springframework.dao.OptimisticLockingFailureException ex
+    ) {
+        ErrorCode error = ErrorCode.STOCK_UPDATE_CONFLICT;
+        return ResponseEntity.status(error.getStatus())
+                .body(ApiResponse.error(error.name(), error.getMessage(), List.of()));
+    }
+
     @ExceptionHandler(ApiException.class)
     public ResponseEntity<ApiResponse<Void>> handleApiException(ApiException ex) {
         return ResponseEntity.status(ex.getStatus())

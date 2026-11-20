@@ -8,8 +8,5 @@ import java.util.Optional;
 
 @Repository
 public interface OrderRepository extends JpaRepository<Order, String> {
-    Optional<Order> findByAccount_IdAndCheckoutRequestId(
-            String accountId,
-            String checkoutRequestId
-    );
+    Optional<Order> findByAccount_IdAndCheckoutRequestId(String accountId, String checkoutRequestId);
 }
