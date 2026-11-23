@@ -18,4 +18,9 @@ public interface ProductVariantRepository extends JpaRepository<ProductVariant, 
               AND p.deleted = 0 AND p.status = 1
             """, nativeQuery = true)
     int reserveStock(@Param("id") String id, @Param("quantity") int quantity);
+
+    @Modifying
+    @Query("update ProductVariant v set v.quantityInStock = v.quantityInStock + :quantity, "
+            + "v.version = v.version + 1 where v.id = :id")
+    int restoreStock(@Param("id") String id, @Param("quantity") int quantity);
 }

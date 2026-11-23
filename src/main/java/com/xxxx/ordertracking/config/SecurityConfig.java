@@ -21,7 +21,8 @@ public class SecurityConfig {
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize ->
                         authorize.requestMatchers("/api/csrf").authenticated()
-                                .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/orders").hasRole("CUSTOMER")
+                                .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/orders", "/api/v1/orders/*/cancel").hasRole("CUSTOMER")
+                                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/orders", "/api/v1/orders/*").hasRole("CUSTOMER")
                                 .requestMatchers("/api/v1/cart-item/**", "/api/v1/checkout/**").hasRole("CUSTOMER")
                                 .anyRequest().denyAll())
                 .httpBasic(Customizer.withDefaults())

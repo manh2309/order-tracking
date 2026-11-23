@@ -15,4 +15,4 @@ logging:
 
 app:
   inventory:
-    reservation-mode: atomic
+    reservation-mode: pessimistic
