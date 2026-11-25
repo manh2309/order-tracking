@@ -2,18 +2,16 @@ package com.xxxx.ordertracking.controller;
 
 import com.xxxx.ordertracking.common.response.ApiResponse;
 import com.xxxx.ordertracking.config.AccountPrincipal;
+import com.xxxx.ordertracking.dto.request.CancelRequest;
 import com.xxxx.ordertracking.dto.request.CreateOrderRequest;
 import com.xxxx.ordertracking.dto.response.CreateOrderResponse;
 import com.xxxx.ordertracking.dto.response.OrderDetailResponse;
 import com.xxxx.ordertracking.dto.response.OrderSummary;
 import com.xxxx.ordertracking.enums.OrderStatus;
 import com.xxxx.ordertracking.repository.OrderRepository;
-import com.xxxx.ordertracking.service.CustomerOrderService;
 import com.xxxx.ordertracking.service.OrderExportService;
 import com.xxxx.ordertracking.service.OrderService;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
 import jakarta.validation.Valid;
 import java.io.IOException;
 import lombok.RequiredArgsConstructor;
@@ -31,7 +29,6 @@ import org.springframework.web.bind.annotation.*;
 public class OrderController {
     private final OrderService orderService;
     private final OrderRepository orders;
-    private final CustomerOrderService customerOrders;
     private final OrderExportService exporter;
 
     @PostMapping
@@ -52,15 +49,13 @@ public class OrderController {
     @GetMapping("/{id}")
     public ApiResponse<OrderDetailResponse> detail(@AuthenticationPrincipal AccountPrincipal user,
                                                     @PathVariable String id) {
-        return ApiResponse.ok(customerOrders.detail(user.getAccountId(), id));
+        return ApiResponse.ok(orderService.detail(user.getAccountId(), id));
     }
-
-    public record CancelRequest(@NotBlank @Size(max = 500) String reason) {}
 
     @PostMapping("/{id}/cancel")
     public ApiResponse<OrderSummary> cancel(@AuthenticationPrincipal AccountPrincipal user, @PathVariable String id,
                                             @Valid @RequestBody CancelRequest request) {
-        return ApiResponse.ok(customerOrders.cancel(user.getAccountId(), id, request.reason()));
+        return ApiResponse.ok(orderService.cancel(user.getAccountId(), id, request.reason()));
     }
 
     @GetMapping("/export")
@@ -69,5 +64,10 @@ public class OrderController {
         response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
         response.setHeader("Content-Disposition", "attachment; filename=\"orders.xlsx\"");
         exporter.write(user.getAccountId(), status, response.getOutputStream());
+    }
+
+    @PostMapping("/{id}/confirm")
+    public ApiResponse<OrderSummary> confirm(@PathVariable String id) {
+        return ApiResponse.ok(orderService.confirm(id));
     }
 }

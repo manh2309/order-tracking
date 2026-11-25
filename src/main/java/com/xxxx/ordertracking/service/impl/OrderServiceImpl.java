@@ -4,7 +4,10 @@ import com.xxxx.ordertracking.common.exception.ApiException;
 import com.xxxx.ordertracking.common.exception.ErrorCode;
 import com.xxxx.ordertracking.dto.request.CreateOrderRequest;
 import com.xxxx.ordertracking.dto.response.CreateOrderResponse;
+import com.xxxx.ordertracking.dto.response.OrderSummary;
+import com.xxxx.ordertracking.dto.response.OrderDetailResponse;
 import com.xxxx.ordertracking.entity.*;
+import com.xxxx.ordertracking.enums.OrderStatus;
 import com.xxxx.ordertracking.repository.*;
 import com.xxxx.ordertracking.service.OrderService;
 import com.xxxx.ordertracking.service.CheckoutPricingService;
@@ -19,6 +22,8 @@ import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.Comparator;
 import java.util.HexFormat;
 import java.util.Objects;
@@ -29,6 +34,7 @@ import java.util.stream.Stream;
 @Service
 @RequiredArgsConstructor
 public class OrderServiceImpl implements OrderService {
+    private final ProductVariantRepository productVariantRepository;
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
     private final CartRepository cartRepository;
@@ -102,6 +108,49 @@ public class OrderServiceImpl implements OrderService {
         return toResponse(saved);
     }
 
+    @Override
+    @Transactional
+    public OrderSummary confirm(String orderId) {
+        int updated = orderRepository.confirmOrder(orderId, OrderStatus.PENDING.getCode(),
+                OrderStatus.CONFIRMED.getCode(), LocalDateTime.now(ZoneOffset.UTC));
+        OrderSummary result = orderRepository.activeSummary(orderId)
+                .orElseThrow(() -> new ApiException(ErrorCode.ORDER_NOT_FOUND));
+        if (updated == 0) {
+            throw new ApiException(ErrorCode.INVALID_ORDER_STATUS_TRANSITION);
+        }
+        return result;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public OrderDetailResponse detail(String accountId, String id) {
+        Order order = orderRepository.findByIdAndAccount_IdAndDeleted(id, accountId, (byte) 0)
+                .orElseThrow(() -> new ApiException(ErrorCode.ORDER_NOT_FOUND));
+        return new OrderDetailResponse(summary(order), order.getRecipientName(), order.getRecipientPhone(),
+                order.getAddressLine(), order.getWardCode(), order.getProvinceCode(), order.getPaymentMethod(),
+                order.getCancelReason(), orderItemRepository.orderLines(id));
+    }
+
+    @Override
+    @Transactional
+    public OrderSummary cancel(String accountId, String id, String reason) {
+        Order order = orderRepository.lockCustomerOrder(accountId, id)
+                .orElseThrow(() -> new ApiException(ErrorCode.ORDER_NOT_FOUND));
+        if (order.getStatus() == OrderStatus.CANCELLED) return summary(order);
+        if (order.getStatus() != OrderStatus.PENDING || !"COD".equals(order.getPaymentMethod())) {
+            throw new ApiException(ErrorCode.INVALID_ORDER_STATUS_TRANSITION);
+        }
+        for (var item : orderItemRepository.findByOrder_IdAndDeletedOrderByProductVariant_IdAsc(id, (byte) 0)) {
+            if (productVariantRepository.restoreStock(item.getProductVariant().getId(), item.getQuantity()) != 1) {
+                throw new ApiException(ErrorCode.STOCK_UPDATE_CONFLICT);
+            }
+        }
+        order.setStatus(OrderStatus.CANCELLED);
+        order.setCancelledAt(LocalDateTime.now(ZoneOffset.UTC));
+        order.setCancelReason(reason.strip());
+        return summary(order);
+    }
+
     private static OrderItem toOrderItem(Order order, CartItem cartItem) {
         ProductVariant variant = cartItem.getProductVariant();
         OrderItem item = new OrderItem();
@@ -144,5 +193,10 @@ public class OrderServiceImpl implements OrderService {
         } catch (NoSuchAlgorithmException ex) {
             throw new IllegalStateException("SHA-256 unavailable", ex);
         }
+    }
+
+    private static OrderSummary summary(Order o) {
+        return new OrderSummary(o.getId(), o.getCode(), o.getCreatedAt(), o.getStatus(), o.getSubtotal(),
+                o.getDiscountAmount(), o.getShippingFee(), o.getGrandTotal(), o.getCurrency());
     }
 }

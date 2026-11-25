@@ -1,22 +1,26 @@
 package com.xxxx.ordertracking.repository;
 
-import com.xxxx.ordertracking.entity.Order;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
-
 import com.xxxx.ordertracking.dto.response.OrderSummary;
+import com.xxxx.ordertracking.entity.Order;
 import com.xxxx.ordertracking.enums.OrderStatus;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 @Repository
 public interface OrderRepository extends JpaRepository<Order, String> {
     Optional<Order> findByAccount_IdAndCheckoutRequestId(String accountId, String checkoutRequestId);
+
 
     String SUMMARY = """
             select new com.xxxx.ordertracking.dto.response.OrderSummary(
@@ -38,4 +42,15 @@ public interface OrderRepository extends JpaRepository<Order, String> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select o from Order o where o.id = :id and o.account.id = :accountId and o.deleted = 0")
     Optional<Order> lockCustomerOrder(String accountId, String id);
+
+    @Modifying
+    @Query(value = """
+            UPDATE orders SET status = :confirmed, modified_date = :now
+            WHERE id = :id AND status = :pending AND deleted = 0
+            """, nativeQuery = true)
+    int confirmOrder(@Param("id") String id, @Param("pending") byte pending,
+                     @Param("confirmed") byte confirmed, @Param("now") LocalDateTime now);
+
+    @Query(SUMMARY + " from Order o where o.id = :id and o.deleted = 0")
+    Optional<OrderSummary> activeSummary(String id);
 }
