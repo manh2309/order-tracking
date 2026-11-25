@@ -3,7 +3,9 @@ package com.xxxx.ordertracking.service.impl;
 import com.xxxx.ordertracking.common.exception.ApiException;
 import com.xxxx.ordertracking.common.exception.ErrorCode;
 import com.xxxx.ordertracking.dto.request.CreateOrderRequest;
+import com.xxxx.ordertracking.dto.request.CreateShipmentRequest;
 import com.xxxx.ordertracking.dto.response.CreateOrderResponse;
+import com.xxxx.ordertracking.dto.response.CreateShipmentResponse;
 import com.xxxx.ordertracking.dto.response.OrderSummary;
 import com.xxxx.ordertracking.dto.response.OrderDetailResponse;
 import com.xxxx.ordertracking.entity.*;
@@ -42,6 +44,8 @@ public class OrderServiceImpl implements OrderService {
     private final CheckoutPricingService checkoutPricingService;
     private final StockReservation stockReservation;
     private final CartItemRepository cartItemRepository;
+    private final AccountRepository accountRepository;
+    private final ShipmentRepository shipmentRepository;
     @Override
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public CreateOrderResponse createOrder(CreateOrderRequest request, String accountId) {
@@ -149,6 +153,36 @@ public class OrderServiceImpl implements OrderService {
         order.setCancelledAt(LocalDateTime.now(ZoneOffset.UTC));
         order.setCancelReason(reason.strip());
         return summary(order);
+    }
+
+    @Override
+    @Transactional
+    public CreateShipmentResponse createShipment(String orderId, CreateShipmentRequest request) {
+        Order order = orderRepository.lockActiveOrder(orderId)
+                .orElseThrow(() -> new ApiException(ErrorCode.ORDER_NOT_FOUND));
+        if (order.getStatus() != OrderStatus.CONFIRMED) {
+            throw new ApiException(ErrorCode.INVALID_ORDER_STATUS_TRANSITION);
+        }
+        if (shipmentRepository.existsByOrderId(orderId)) {
+            throw new ApiException(ErrorCode.SHIPMENT_EXISTED);
+        }
+        Account shipper = accountRepository.findActiveShipper(request.shipperId())
+                .orElseThrow(() -> new ApiException(ErrorCode.SHIPPER_UNAVAILABLE));
+        if (order.getCarrier() == null) {
+            throw new ApiException(ErrorCode.CARRIER_NOT_AVAILABLE);
+        }
+        Long weight = orderItemRepository.totalWeightGrams(orderId);
+        if (weight == null || weight < 0 || weight > Integer.MAX_VALUE) {
+            throw new ApiException(ErrorCode.INVALID_SHIPMENT_WEIGHT);
+        }
+
+        Shipment shipment = new Shipment();
+        shipment.setOrder(order);
+        shipment.setShipper(shipper);
+        shipment.setCarrier(order.getCarrier());
+        shipment.setTotalWeightGrams(weight.intValue());
+        Shipment saved = shipmentRepository.save(shipment);
+        return new CreateShipmentResponse(saved.getId(), orderId, saved.getStatus());
     }
 
     private static OrderItem toOrderItem(Order order, CartItem cartItem) {

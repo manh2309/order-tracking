@@ -24,7 +24,10 @@ public enum ErrorCode {
     ADDRESS_NOT_FOUND(HttpStatus.NOT_FOUND, "Không tìm thấy địa chỉ giao hàng"),
     SHIPPING_FEE_UNAVAILABLE(HttpStatus.CONFLICT, "Chưa xác định được phí vận chuyển cho giỏ hàng này"),
     STOCK_UPDATE_CONFLICT(HttpStatus.CONFLICT, "Tồn kho vừa thay đổi, vui lòng kiểm tra lại giỏ hàng"),
-    CARRIER_NOT_AVAILABLE(HttpStatus.CONFLICT, "Đơn vị vận chuyển hiện không khả dụng");
+    CARRIER_NOT_AVAILABLE(HttpStatus.CONFLICT, "Đơn vị vận chuyển hiện không khả dụng"),
+    SHIPPER_UNAVAILABLE(HttpStatus.CONFLICT, "Tài khoản giao hàng không khả dụng"),
+    INVALID_SHIPMENT_WEIGHT(HttpStatus.CONFLICT, "Không xác định được trọng lượng hợp lệ cho vận đơn"),
+    SHIPMENT_EXISTED(HttpStatus.CONFLICT, "Đơn vận chuyển cho đơn hàng này đã tồn tại");
 
     private final HttpStatus status;
     private final String message;

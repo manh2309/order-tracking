@@ -43,6 +43,10 @@ public interface OrderRepository extends JpaRepository<Order, String> {
     @Query("select o from Order o where o.id = :id and o.account.id = :accountId and o.deleted = 0")
     Optional<Order> lockCustomerOrder(String accountId, String id);
 
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select o from Order o where o.id = :id and o.deleted = 0")
+    Optional<Order> lockActiveOrder(String id);
+
     @Modifying
     @Query(value = """
             UPDATE orders SET status = :confirmed, modified_date = :now

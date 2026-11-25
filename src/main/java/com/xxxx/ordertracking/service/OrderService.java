@@ -1,7 +1,9 @@
 package com.xxxx.ordertracking.service;
 
 import com.xxxx.ordertracking.dto.request.CreateOrderRequest;
+import com.xxxx.ordertracking.dto.request.CreateShipmentRequest;
 import com.xxxx.ordertracking.dto.response.CreateOrderResponse;
+import com.xxxx.ordertracking.dto.response.CreateShipmentResponse;
 import com.xxxx.ordertracking.dto.response.OrderSummary;
 import com.xxxx.ordertracking.dto.response.OrderDetailResponse;
 
@@ -10,4 +12,5 @@ public interface OrderService {
     OrderSummary confirm(String orderId);
     OrderDetailResponse detail(String accountId, String id);
     OrderSummary cancel(String accountId, String id, String reason);
+    CreateShipmentResponse createShipment(String orderId, CreateShipmentRequest request);
 }
