@@ -25,7 +25,8 @@ public class SecurityConfig {
                                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/orders", "/api/v1/orders/*").hasRole("CUSTOMER")
                                 .requestMatchers("/api/v1/cart-item/**", "/api/v1/checkout/**").hasRole("CUSTOMER")
                                 .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/orders/*/confirm", "/api/v1/orders/*/shipment").hasRole("ADMIN")
-                        .anyRequest().denyAll())
+                                .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/shipments/*/events").hasRole("SHIPPER")
+                                .anyRequest().denyAll())
                 .httpBasic(Customizer.withDefaults())
                 .build();
     }
